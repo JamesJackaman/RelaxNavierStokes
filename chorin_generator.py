@@ -32,7 +32,7 @@ if __name__=="__main__":
     Mrefs = [2,3]
     tdegrees = [0,1]
     sdegrees = [1,2]
-    Rs = [1e0,1e1,1e2]
+    Rs = [1e1]
     MPIProcesses = 8
     dts = [0.01] #List should contain dt_
 

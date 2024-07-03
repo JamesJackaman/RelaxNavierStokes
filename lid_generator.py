@@ -29,7 +29,7 @@ if __name__=="__main__":
     Mbase = 10
 
     #Define lists for those we want to vary
-    Mrefs = [2,3,4]
+    Mrefs = [2,3]
     tdegrees = [0,1]
     sdegrees = [1,2]
     Rs = [1e0,1e1,1e2]

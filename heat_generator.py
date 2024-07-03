@@ -30,9 +30,9 @@ if __name__=="__main__":
     Mbase = 10
 
     #Define lists for those we want to vary
-    Mrefs = [1]#1,2,3,4]
+    Mrefs = [3,4]
     tdegrees = [0,1,2,3]
-    sdegrees = [1,2,3,4]
+    sdegrees = [1,2,3]
     MPIProcesses = 8
 
     #Get the temporary file name unique to the set flags
