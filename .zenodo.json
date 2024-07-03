@@ -1,0 +1,18 @@
+{
+    "creators": [
+        {
+            "affiliation": "NTNU",
+            "name": "Jackaman, James",
+            "orcid": "0000-0003-2189-9732"
+        },
+	{
+	    "affiliation": "Memorial University of Newfoundland",
+	    "name": "MacLachlan, Scott",
+	    "orcid": "0000-0002-6364-0684"
+	}
+    ],
+    "description": "Code used to generate experiments in `Space-time waveform relaxation for Navier-Stokes' by Jackaman and MacLachlan.",
+    "license": "MIT",
+    "title": "Implementation of experiments in `Space-Time waveform relaxation for Navier-Stokes'",
+    "upload_type": "software"
+}
