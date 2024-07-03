@@ -8,7 +8,6 @@ import matplotlib.pylab as plt
 import numpy as np
 from time import time
 from pyop2.datatypes import IntType
-from utils import snapshot
 
 #Parallel safe printing
 Print = PETSc.Sys.Print
@@ -217,9 +216,6 @@ def lid(para=parameters):
     
     #Plot
     if para.plot:
-        V = MixedFunctionSpace((VectorFunctionSpace(spatial_mh[-1],"CG", para.degree['space']+1),
-                                FunctionSpace(spatial_mh[-1],"CG", para.degree['space'])))
-        snapshot(z,parameters=para,V=V,Z=Z,name='lid_snapshots')
         ufile = File('plots/lid.pvd')
         u, p= z.subfunctions
         u.rename("u","u")

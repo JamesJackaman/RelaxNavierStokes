@@ -8,7 +8,6 @@ import matplotlib.pylab as plt
 import numpy as np
 from time import time
 from pyop2.datatypes import IntType
-from utils import snapshot
 
 #Parallel safe printing
 Print = PETSc.Sys.Print
