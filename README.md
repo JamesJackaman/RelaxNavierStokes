@@ -17,10 +17,10 @@ python3 firedrake-install
 The Firedrake version used in the associated paper can be installed with the command
 
 ```bash
-python3 firedrake-install --doi FOO
+python3 firedrake-install --doi 10.5281/zenodo.12657473
 ```
 
-The Zenodo URL for Firedrake can be found **HERE**, and has DOI **FOO**.
+The Zenodo URL for Firedrake can be found [here](https://zenodo.org/records/12657473), and has DOI [10.5281/zenodo.12657473](https://doi.org/10.5281/zenodo.12657473).
 
 ### Pandas
 
