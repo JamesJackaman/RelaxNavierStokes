@@ -13,6 +13,6 @@
     ],
     "description": "Code used to generate experiments in `Space-time waveform relaxation for Navier-Stokes' by Jackaman and MacLachlan.",
     "license": "MIT",
-    "title": "Implementation of experiments in `Space-Time waveform relaxation for Navier-Stokes'",
+    "title": "Implementation of experiments in `Space-time waveform relaxation for Navier-Stokes'",
     "upload_type": "software"
 }
