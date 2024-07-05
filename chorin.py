@@ -177,12 +177,10 @@ def chorin(para=parameters):
     nnz = int(A.getInfo()['nz_allocated'])
     
     #Compute error
-    u_exact = Function(Z.sub(0))
-    val = as_vector((-cos(pi*x)*sin(pi*y)*exp(-2*pi**2*t),
+    u_exact = as_vector((-cos(pi*x)*sin(pi*y)*exp(-2*pi**2*t),
                      sin(pi*x)*cos(pi*y)*exp(-2*pi**2*t)))
-    u_exact.interpolate(val)
     
-    l2err = assemble((u-u_exact)**2*dx)**0.5
+    l2err = assemble((u-u_exact)**2*dx(degree=16))**0.5
     print('Error is ', l2err)
     
     #Plot
