@@ -29,12 +29,12 @@ if __name__=="__main__":
     Mbase = 10
 
     #Define lists for those we want to vary
-    Mrefs = [2,3]
+    Mrefs = [3]
     tdegrees = [0,1]
     sdegrees = [1,2]
     Rs = [1e1]
     MPIProcesses = 8
-    dts = [0.01] #List should contain dt_
+    dts = [0.01,0.005,0.0025] #List should contain dt_
 
     #Make temporary file name unique under flags
     tmpname = args.flags.replace(' ', '_').replace('-','')
