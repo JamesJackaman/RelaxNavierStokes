@@ -1,7 +1,7 @@
 # Space-time waveform relaxation for Navier-Stokes
 [![DOI](https://zenodo.org/badge/822445345.svg)](https://zenodo.org/doi/10.5281/zenodo.12666474)
 
-This repository is a suppliment to the paper "Space-time waveform relaxation for Navier-Stokes", and contains the implementation required to reproduce the numerical experiments presented within.
+This repository is a suppliment to the paper [Space-time waveform relaxation for Navier-Stokes](http://arxiv.org/abs/2407.13997), and contains the implementation required to reproduce the numerical experiments presented within.
 
 ## Installation
 
