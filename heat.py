@@ -50,7 +50,7 @@ def heat(para=parameters):
 
     #Define initial condition
     x, y, t = SpatialCoordinate(U.mesh())
-    u0 = interpolate(sin(pi*x)+cos(2*pi*y), U)
+    u0 = Function(U).interpolate(sin(pi*x)+cos(2*pi*y))
 
     #Set up residual
     u = Function(U)
