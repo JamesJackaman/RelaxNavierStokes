@@ -23,7 +23,7 @@ class parameters:
         self.R = Constant(100) #Reynolds number
         self.alpha = Constant(1) #Diffusion constant
         self.plot = True
-        self.solver = 'one_step'
+        self.solver = 'mg'
     
 
 def lid(para=parameters):
@@ -144,6 +144,8 @@ def lid(para=parameters):
                              "ksp_gmres_restart": 100,
                              "ksp_atol": 1e-6,
                              "ksp_rtol": 1e-6,
+                             "snes_atol": 1e-6,
+                             "snes_rtol": 1e-6,
                              'pc_type': 'mg',
                              "pc_mg_type": "multiplicative",
                              "pc_mg_cycles": "v",
@@ -167,12 +169,12 @@ def lid(para=parameters):
                              'snes_ksp_ew': None,
                              'snes_monitor': None,
                              'mat_type': 'aij',
+                             'ksp_atol': 1e-8,
+                             'ksp_rtol': 1e-8,
                              'ksp_type': 'fgmres',
                              "ksp_monitor_true_residual": None,
                              "ksp_max_it": 100,
                              "ksp_gmres_restart": 100,
-                             "ksp_atol": 1e-6,
-                             "ksp_rtol": 1e-6,
                              'pc_type': 'mg',
                              "pc_mg_type": "multiplicative",
                              "pc_mg_cycles": "v",
