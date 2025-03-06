@@ -75,7 +75,7 @@ if __name__=="__main__":
                             with open(filename, 'rb') as file:
                                 out_ = pickle.load(file)
                                 data_ = ['MPI %s, Mref %s, tdegree %s, sdegree %s, R %s' % (MPIProcess,Mref,tdegree,sdegree,R),
-                                         out_['dof'], out_['nnz'], out_['iterations'], out_['newton iterations'], out_['time_total'],out_['time_solve']]
+                                         out_['dof'], out_['iterations'], out_['newton iterations'], out_['time_total'],out_['time_solve']]
                             data.append(data_)
                         except Exception as e:
                             print('Loading %s failed with' % filename)
