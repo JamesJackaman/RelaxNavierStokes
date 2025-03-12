@@ -11,7 +11,7 @@ if __name__=="__main__":
         os.mkdir('tmp')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--N', type=int, default=10,
+    parser.add_argument('--N', type=int, default=20,
                         help = 'Number of time steps')
     parser.add_argument('--dt', type=float, default=0.01,
                         help = 'Time step')

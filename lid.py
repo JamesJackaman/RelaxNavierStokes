@@ -118,7 +118,7 @@ def lid(para=parameters):
     
     
     #Set up solver
-    tol = 1e-6 #solver tolerance
+    tol = 1e-8 #solver tolerance
     if para.solver=='lu':
         solver_parameters = {'mat_type': 'aij',
                              'ksp_type': 'preonly',
@@ -143,8 +143,8 @@ def lid(para=parameters):
                              "ksp_monitor_true_residual": None,
                              "ksp_max_it": 100,
                              "ksp_gmres_restart": 100,
-                             "ksp_atol": tol,
-                             "ksp_rtol": tol,
+                             # "ksp_atol": tol,
+                             # "ksp_rtol": tol,
                              "snes_atol": tol,
                              "snes_rtol": tol,
                              'pc_type': 'mg',
@@ -170,8 +170,8 @@ def lid(para=parameters):
                              'snes_ksp_ew': None,
                              'snes_monitor': None,
                              'mat_type': 'aij',
-                             "ksp_atol": tol,
-                             "ksp_rtol": tol,
+                             # "ksp_atol": tol,
+                             # "ksp_rtol": tol,
                              "snes_atol": tol,
                              "snes_rtol": tol,
                              'ksp_type': 'fgmres',

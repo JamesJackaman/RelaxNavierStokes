@@ -85,6 +85,7 @@ def chorin(para=parameters):
     bc = DirichletBC(Z.sub(0),ut,"on_boundary")
     
     #Set up solver
+    tol = 1e-8 #solver tolerance
     if para.solver=='lu':
         solver_parameters = {'mat_type': 'aij',
                              'ksp_type': 'preonly',
@@ -104,8 +105,10 @@ def chorin(para=parameters):
                              "ksp_monitor_true_residual": None,
                              "ksp_max_it": 100,
                              "ksp_gmres_restart": 100,
-                             "ksp_atol": 1e-6,
-                             "ksp_rtol": 1e-6,
+                             "ksp_atol": tol,
+                             "ksp_rtol": tol,
+                             'snes_atol': tol,
+                             'snes_rtol': tol,
                              'pc_type': 'mg',
                              "pc_mg_type": "multiplicative",
                              "pc_mg_cycles": "v",
@@ -133,8 +136,10 @@ def chorin(para=parameters):
                              "ksp_monitor_true_residual": None,
                              "ksp_max_it": 100,
                              "ksp_gmres_restart": 100,
-                             "ksp_atol": 1e-6,
-                             "ksp_rtol": 1e-6,
+                             # "ksp_atol": tol,
+                             # "ksp_rtol": tol,
+                             'snes_atol': tol,
+                             'snes_rtol': tol,
                              'pc_type': 'mg',
                              "pc_mg_type": "multiplicative",
                              "pc_mg_cycles": "v",
