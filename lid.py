@@ -118,6 +118,7 @@ def lid(para=parameters):
     
     
     #Set up solver
+    tol = 1e-6 #solver tolerance
     if para.solver=='lu':
         solver_parameters = {'mat_type': 'aij',
                              'ksp_type': 'preonly',
@@ -125,8 +126,8 @@ def lid(para=parameters):
                              "pc_factor_shift_type":"nonzero",
                              'pc_type': 'lu',
                              'snes_max_it': 1000,
-                             'snes_rtol': 1e-6,
-                             'snes_stol': 1e-6,
+                             'snes_rtol': tol,
+                             'snes_stol': tol,
                              'snes_monitor': None}
     elif para.solver=='lu_step':
         solver_parameters = {'mat_type': 'aij',
@@ -142,10 +143,10 @@ def lid(para=parameters):
                              "ksp_monitor_true_residual": None,
                              "ksp_max_it": 100,
                              "ksp_gmres_restart": 100,
-                             "ksp_atol": 1e-6,
-                             "ksp_rtol": 1e-6,
-                             "snes_atol": 1e-6,
-                             "snes_rtol": 1e-6,
+                             "ksp_atol": tol,
+                             "ksp_rtol": tol,
+                             "snes_atol": tol,
+                             "snes_rtol": tol,
                              'pc_type': 'mg',
                              "pc_mg_type": "multiplicative",
                              "pc_mg_cycles": "v",
@@ -169,8 +170,10 @@ def lid(para=parameters):
                              'snes_ksp_ew': None,
                              'snes_monitor': None,
                              'mat_type': 'aij',
-                             'ksp_atol': 1e-8,
-                             'ksp_rtol': 1e-8,
+                             "ksp_atol": tol,
+                             "ksp_rtol": tol,
+                             "snes_atol": tol,
+                             "snes_rtol": tol,
                              'ksp_type': 'fgmres',
                              "ksp_monitor_true_residual": None,
                              "ksp_max_it": 100,
