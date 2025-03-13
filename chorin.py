@@ -55,7 +55,7 @@ def chorin(para=parameters):
     z0 = Function(Z)
     u0, p0 = z0.subfunctions
     
-    u0 = interpolate(as_vector((-sin(pi*y)*cos(pi*x), cos(pi*y)*sin(pi*x))),Z.sub(0))
+    u0 = Function(Z.sub(0)).interpolate(as_vector((-sin(pi*y)*cos(pi*x), cos(pi*y)*sin(pi*x))))
     ut = as_vector((-cos(pi*x)*sin(pi*y)*exp(-2*pi**2*t),
                     sin(pi*x)*cos(pi*y)*exp(-2*pi**2*t)))
     
