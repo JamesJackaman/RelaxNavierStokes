@@ -30,7 +30,10 @@ def chorin(para=parameters):
         return -0.5*jump(v,n[2]) + avg(v)
     
     #Set up mesh
-    base_ = UnitSquareMesh(para.Mbase,para.Mbase)
+    distribution_parameters={"partition": True,
+                             "overlap_type": (DistributedMeshOverlapType.VERTEX, 2)}
+    base_ = UnitSquareMesh(para.Mbase,para.Mbase,
+                           distribution_parameters=distribution_parameters)
     spatial_mh = MeshHierarchy(base_,para.Mref)
     mh = ExtrudedMeshHierarchy(spatial_mh, para.N*para.dt,
                         base_layer = para.N,
@@ -131,6 +134,7 @@ def chorin(para=parameters):
         solver_parameters = {'snes_type': 'newtonls',
                              'snes_ksp_ew': None,
                              'snes_monitor': None,
+                             'snes_converged_reason': None,
                              'mat_type': 'aij',
                              'ksp_type': 'fgmres',
                              "ksp_monitor_true_residual": None,
@@ -255,9 +259,7 @@ class ASMVankaStarPC(ASMPatchPC):
         ordering = PETSc.Options().getString(self.prefix+"mat_ordering_type", default="natural")
         # Accessing .indices causes the allocation of a global array,
         # so we need to cache these for efficiency
-        V_local_ises_indices = []
-        for (i, W) in enumerate(V):
-            V_local_ises_indices.append(V.dof_dset.local_ises[i].indices)
+        V_local_ises_indices = tuple(iset.indices for iset in V.dof_dset.local_ises)
 
         # Build index sets for the patches
         ises = []
@@ -275,12 +277,14 @@ class ASMVankaStarPC(ASMPatchPC):
             star, _ = mesh_dm.getTransitiveClosure(seed, useCone=False)
             pt_array_star = order_points(mesh_dm, star, ordering, self.prefix)
             
-            pt_array_vanka = set()
+            pt_array_vanka = []
             for pt in star.tolist():
                 closure, _ = mesh_dm.getTransitiveClosure(pt, useCone=True)
-                pt_array_vanka.update(closure.tolist())
+                pt_array_vanka.extend(closure)
 
-            pt_array_vanka = order_points(mesh_dm, pt_array_vanka, ordering, self.prefix)
+            # Grab unique points with stable ordering           
+            pt_array_vanka = list(reversed(dict.fromkeys(pt_array_vanka)))
+
             # Get DoF indices for patch
             indices = []
             for (i, W) in enumerate(V):
@@ -295,7 +299,7 @@ class ASMVankaStarPC(ASMPatchPC):
                         continue
                     off = section.getOffset(p)
                     # Local indices within W
-                    W_indices = slice(off*W.value_size, W.value_size * (off + dof))
+                    W_indices = slice(off*W.block_size, W.block_size * (off + dof))
                     indices.extend(V_local_ises_indices[i][W_indices])
             iset = PETSc.IS().createGeneral(indices, comm=PETSc.COMM_SELF)
             ises.append(iset)
