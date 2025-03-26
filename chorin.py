@@ -31,7 +31,7 @@ def chorin(para=parameters):
     
     #Set up mesh
     distribution_parameters={"partition": True,
-                             "overlap_type": (DistributedMeshOverlapType.VERTEX, 2)}
+                             "overlap_type": (DistributedMeshOverlapType.VERTEX, 3)}
     base_ = UnitSquareMesh(para.Mbase,para.Mbase,
                            distribution_parameters=distribution_parameters)
     spatial_mh = MeshHierarchy(base_,para.Mref)
@@ -134,6 +134,7 @@ def chorin(para=parameters):
         solver_parameters = {'snes_type': 'newtonls',
                              'snes_ksp_ew': None,
                              'snes_monitor': None,
+                             'snes_linesearch_monitor': None,
                              'snes_converged_reason': None,
                              'mat_type': 'aij',
                              'ksp_type': 'fgmres',
@@ -142,6 +143,7 @@ def chorin(para=parameters):
                              "ksp_gmres_restart": 100,
                              # "ksp_atol": tol,
                              # "ksp_rtol": tol,
+                             'snes_stol': 0,
                              'snes_atol': tol,
                              'snes_rtol': tol,
                              'pc_type': 'mg',
@@ -152,15 +154,22 @@ def chorin(para=parameters):
                              "mg_levels_ksp_max_it": 2,
                              "mg_levels_ksp_convergence_test": "skip",
                              "mg_levels_pc_type": "python",
-                             "mg_levels_pc_python_type": __name__ + ".ASMVankaStarPC",
-                             "mg_levels_pc_vankastar_construct_dim": 0,
-                             "mg_levels_pc_vankastar_exclude_subspaces": "1",
-                             "mg_levels_pc_vankastar_sub_sub_pc_type": "lu",
-                             "mg_levels_pc_vankastar_sub_sub_pc_factor_mat_solver_type": "umfpack",
+                             # "mg_levels_pc_python_type": __name__ + ".ASMVankaStarPC",
+                             # "mg_levels_pc_vankastar_construct_dim": 0,
+                             # "mg_levels_pc_vankastar_exclude_subspaces": "1",
+                             # "mg_levels_pc_vankastar_sub_sub_pc_type": "lu",
+                             # "mg_levels_pc_vankastar_sub_sub_pc_factor_mat_solver_type": "umfpack",
+                             "mg_levels_pc_python_type": "firedrake.ASMVankaPC",
+                             "mg_levels_pc_vanka_include_type": "star",
+                             "mg_levels_pc_vanka_construct_dim": 0,
+                             "mg_levels_pc_vanka_exclude_subspaces": "1",
+                             "mg_levels_pc_vanka_sub_sub_pc_type": "lu",
+                             "mg_levels_pc_vanka_sub_sub_pc_factor_mat_solver_type": "umfpack",
                              "mg_coarse_pc_type": "python",
                              "mg_coarse_pc_python_type": "firedrake.AssembledPC",
                              "mg_coarse_assembled_pc_type": "lu",
                              "mg_coarse_assembled_pc_factor_mat_solver_type": "mumps",
+                             "mg_coarse_assembled_pc_factor_shift_type": "nonzero",
                              }
 
     
@@ -278,7 +287,7 @@ class ASMVankaStarPC(ASMPatchPC):
             pt_array_star = order_points(mesh_dm, star, ordering, self.prefix)
             
             pt_array_vanka = []
-            for pt in star.tolist():
+            for pt in reversed(pt_array_star):
                 closure, _ = mesh_dm.getTransitiveClosure(pt, useCone=True)
                 pt_array_vanka.extend(closure)
 
