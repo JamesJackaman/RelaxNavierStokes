@@ -44,41 +44,41 @@ if __name__=="__main__":
     #Make temporary file name unique under flags
     tmpname = args.flags.replace(' ', '_').replace('-','')
     
-    # #generate data
-    # for Mref in Mrefs:
-    #     for R in Rs:
-    #         for tdegree, sdegree, dt in zip(tdegrees, sdegrees, dts):
-    #             runnum = 0
-    #             while runnum<5:
-    #                 N = int(N_ * (dt_/dt))
-    #                 print('Mref =', Mref)
-    #                 print('tdegree =', tdegree)
-    #                 print('sdegree =', sdegree)
-    #                 print('R =', R)
-    #                 print('dt =', dt)
-    #                 print('N =', N)
+    #generate data
+    for Mref in Mrefs:
+        for R in Rs:
+            for tdegree, sdegree, dt in zip(tdegrees, sdegrees, dts):
+                runnum = 0
+                while runnum<5:
+                    N = int(N_ * (dt_/dt))
+                    print('Mref =', Mref)
+                    print('tdegree =', tdegree)
+                    print('sdegree =', sdegree)
+                    print('R =', R)
+                    print('dt =', dt)
+                    print('N =', N)
 
-    #                 process = subprocess.Popen('mpiexec -n %s python chorin_caller.py %s --N %s --dt %s --tdegree %s --sdegree %s --R %s --Mbase %s --Mref %s --tmpname %s' % (MPIProcesses, '--'+args.flags, N, dt, tdegree, sdegree, R, Mbase, Mref, tmpname),
-    #                                                shell=True, stdout=subprocess.PIPE)
-    #                 Processes.append(process)
+                    process = subprocess.Popen('mpiexec -n %s python chorin_caller.py %s --N %s --dt %s --tdegree %s --sdegree %s --R %s --Mbase %s --Mref %s --tmpname %s' % (MPIProcesses, '--'+args.flags, N, dt, tdegree, sdegree, R, Mbase, Mref, tmpname),
+                                                   shell=True, stdout=subprocess.PIPE)
+                    Processes.append(process)
 
-    #                 stdout, stderr = process.communicate()
-    #                 #did the process fail?
-    #                 if process.returncode==0:
-    #                     print(stdout)
-    #                     print('Success!')
-    #                     runnum=10
-    #                 else:
-    #                     print('ERROR:', stderr)
-    #                     print('Process failed on %s-th run, retry if under 5th run' % runnum)
-    #                     runnum += 1
+                    stdout, stderr = process.communicate()
+                    #did the process fail?
+                    if process.returncode==0:
+                        print(stdout)
+                        print('Success!')
+                        runnum=10
+                    else:
+                        print('ERROR:', stderr)
+                        print('Process failed on %s-th run, retry if under 5th run' % runnum)
+                        runnum += 1
 
-    #             while checkrunning()==MaxProcesses:
-    #                 time.sleep(1)
-    # while checkrunning()!=0:
-    #     time.sleep(1)
+                while checkrunning()==MaxProcesses:
+                    time.sleep(1)
+    while checkrunning()!=0:
+        time.sleep(1)
 
-    # print('Data generation complete')
+    print('Data generation complete')
     
     #Pick up data and in list
     data = []
