@@ -60,6 +60,7 @@ if __name__=="__main__":
                             Processes.append(process)
 
                             stdout, stderr = process.communicate()
+                            runnum += 1
 
                             #did the process fail?
                             if process.returncode==0:
