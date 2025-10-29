@@ -139,9 +139,9 @@ def chorin(para=parameters):
                              'mat_type': 'aij',
                              'ksp_type': 'fgmres',
                              "ksp_monitor_true_residual": None,
-                             "ksp_max_it": 100,
-                             "ksp_gmres_restart": 100,
-                             # "ksp_atol": tol,
+                             "ksp_max_it": 20,
+                             "ksp_gmres_restart": 20,
+                             "ksp_atol": tol*0.1,
                              # "ksp_rtol": tol,
                              'snes_stol': 0,
                              'snes_atol': tol,
@@ -192,7 +192,7 @@ def chorin(para=parameters):
 
     #Get number of nonzero entries
     A, P = solver.snes.ksp.getOperators()
-    nnz = int(A.getInfo()['nz_allocated'])
+    nnz = int(A.getInfo()['nz_used'])
     
     #Compute error
     u_exact = as_vector((-cos(pi*x)*sin(pi*y)*exp(-2*pi**2*t),

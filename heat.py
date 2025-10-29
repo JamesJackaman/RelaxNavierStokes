@@ -80,8 +80,8 @@ def heat(para=parameters):
                              "ksp_monitor_true_residual": None,
                              "ksp_max_it": 100,
                              "ksp_gmres_restart": 100,
-                             "ksp_atol": 1e-6,
-                             "ksp_rtol": 1e-6,
+                             "ksp_atol": 1e-14,
+                             "ksp_rtol": 1e-10,
                              'pc_type': 'mg',
                              "pc_mg_type": "multiplicative",
                              "pc_mg_cycles": "v",
@@ -89,6 +89,7 @@ def heat(para=parameters):
                              "mg_levels_ksp_chebyshev_esteig": "0,0.25,0,1.05",
                              "mg_levels_ksp_max_it": 2,
                              "mg_levels_ksp_convergence_test": "skip",
+                             "mg_levels_ksp_monitor_true_residual": None,
                              "mg_levels_pc_type": "python",
                              "mg_levels_pc_python_type": "firedrake.ASMStarPC",
                              "mg_levels_pc_star_construct_dim": 0,
@@ -96,6 +97,7 @@ def heat(para=parameters):
                              "mg_levels_pc_star_sub_sub_pc_factor_mat_solver_type": "umfpack",
                              "mg_coarse_pc_type": "python",
                              "mg_coarse_pc_python_type": "firedrake.AssembledPC",
+                             "mg_coarse_ksp_monitor_true_residual": None,
                              "mg_coarse_assembled_pc_type": "lu",
                              "mg_coarse_assembled_pc_factor_mat_solver_type": "mumps",
                              }
@@ -116,7 +118,7 @@ def heat(para=parameters):
 
     #Get number of nonzero entries
     A, P = solver.snes.ksp.getOperators()
-    nnz = int(A.getInfo()['nz_allocated'])
+    nnz = int(A.getInfo()['nz_used'])
     
     #Plot
     if para.plot:
