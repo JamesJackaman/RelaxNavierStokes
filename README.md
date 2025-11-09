@@ -1,7 +1,7 @@
 # Space-time waveform relaxation for Navier-Stokes
 [![DOI](https://zenodo.org/badge/822445345.svg)](https://zenodo.org/doi/10.5281/zenodo.12666474)
 
-This repository is a suppliment to the paper [Space-time waveform relaxation for Navier-Stokes](http://arxiv.org/abs/2407.13997), and contains the implementation required to reproduce the numerical experiments presented within.
+This repository is a supplement to the paper [Space-time waveform relaxation for Navier-Stokes](http://arxiv.org/abs/2407.13997), and contains the implementation required to reproduce the numerical experiments presented within.
 
 ## Installation
 
@@ -100,4 +100,16 @@ A variation of `lid.py` where the space-time finite element method is solved ove
 
 #### `lid_parallel_generator.py`
 
-Generates parallelisation study for lid-driven cavity presented in the paper by varying the number of MPI cores for the WRMG solver. To generate the timings for the time-stepping approach pass the flag `--flags 'stepper'`.
+Generates parallelisation study for lid-driven cavity presented in the paper by varying the number of MPI cores for the WRMG solver. To generate the timings for the time-stepping approach pass the flag `--flags 'stepper'`. Note the published version of this experiments ran on [v1.0](https://github.com/username/repository/releases/v1.0) of this repository.
+
+## Performance modelling
+
+The implementation in this repository only exploits parallelism in time. To explore the potential speed up we have included a performance model of time-parallelism through cyclic reduction, as outlined in [the manuscript](http://arxiv.org/abs/2407.13997). This model has been included in the directory `cost_model`.
+
+#### `train_cost_model.py`
+
+Optimises the parameters of our cost model given simulation data for the heat equation.
+
+#### `cost_model.py`
+
+Runs the performance model for both a time-stepping discretisation of space-time Navier-Stokes parallised in space, and the global space-time discretisation parallelised with cyclic reduction. 
