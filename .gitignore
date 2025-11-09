@@ -144,3 +144,4 @@ tmp/
 #Ignore output files
 *.csv
 *.tex
+*.pdf
