@@ -9,13 +9,7 @@ This repository depends on:
 
 ### [Firedrake](https://www.firedrakeproject.org/)
 
-The Firedrake installation script can be downloaded [here](https://www.firedrakeproject.org/download.html). The latest version can be installed with
-
-```bash
-python3 firedrake-install
-```
-
-The Firedrake version used in the associated paper can be found [here](https://zenodo.org/records/17476664), and has DOI [10.5281/zenodo.17476663](https://doi.org/10.5281/zenodo.17476663).
+The Firedrake installation process is outlined [here](https://www.firedrakeproject.org/download.html). The Firedrake version used in the associated paper can be found [here](https://zenodo.org/records/17476664), and has DOI [10.5281/zenodo.17476663](https://doi.org/10.5281/zenodo.17476663).
 
 ### Pandas
 
