@@ -23,7 +23,7 @@ class parameters:
         self.R = Constant(100) #Reynolds number
         self.alpha = Constant(1) #Diffusion constant
         self.plot = True
-        self.solver = 'one_step'
+        self.solver = 'mg'
     
 
 def lid(para=parameters):
@@ -118,6 +118,7 @@ def lid(para=parameters):
     
     
     #Set up solver
+    tol = 1e-8 #solver tolerance
     if para.solver=='lu':
         solver_parameters = {'mat_type': 'aij',
                              'ksp_type': 'preonly',
@@ -125,8 +126,8 @@ def lid(para=parameters):
                              "pc_factor_shift_type":"nonzero",
                              'pc_type': 'lu',
                              'snes_max_it': 1000,
-                             'snes_rtol': 1e-6,
-                             'snes_stol': 1e-6,
+                             'snes_rtol': tol,
+                             'snes_stol': tol,
                              'snes_monitor': None}
     elif para.solver=='lu_step':
         solver_parameters = {'mat_type': 'aij',
@@ -142,8 +143,10 @@ def lid(para=parameters):
                              "ksp_monitor_true_residual": None,
                              "ksp_max_it": 100,
                              "ksp_gmres_restart": 100,
-                             "ksp_atol": 1e-6,
-                             "ksp_rtol": 1e-6,
+                             # "ksp_atol": tol,
+                             # "ksp_rtol": tol,
+                             "snes_atol": tol,
+                             "snes_rtol": tol,
                              'pc_type': 'mg',
                              "pc_mg_type": "multiplicative",
                              "pc_mg_cycles": "v",
@@ -166,30 +169,42 @@ def lid(para=parameters):
         solver_parameters = {'snes_type': 'newtonls',
                              'snes_ksp_ew': None,
                              'snes_monitor': None,
+                             'snes_linesearch_monitor': None,
+                             'snes_converged_reason': None,
                              'mat_type': 'aij',
+                             "ksp_atol": tol*0.1,
+                             # "ksp_rtol": tol,
+                             'snes_stol': 0,
+                             "snes_atol": tol,
+                             "snes_rtol": tol,
                              'ksp_type': 'fgmres',
                              "ksp_monitor_true_residual": None,
                              "ksp_max_it": 100,
                              "ksp_gmres_restart": 100,
-                             "ksp_atol": 1e-6,
-                             "ksp_rtol": 1e-6,
                              'pc_type': 'mg',
                              "pc_mg_type": "multiplicative",
                              "pc_mg_cycles": "v",
-                             "mg_levels_ksp_type": "chebyshev",
+                             "mg_levels_ksp_type": "gmres",
                              "mg_levels_ksp_chebyshev_esteig": "0,0.25,0,1.05",
-                             "mg_levels_ksp_max_it": 2,
+                             "mg_levels_ksp_max_it": 3,
                              "mg_levels_ksp_convergence_test": "skip",
                              "mg_levels_pc_type": "python",
-                             "mg_levels_pc_python_type": __name__ + ".ASMVankaStarPC",
-                             "mg_levels_pc_vankastar_construct_dim": 0,
-                             "mg_levels_pc_vankastar_exclude_subspaces": "1",
-                             "mg_levels_pc_vankastar_sub_sub_pc_type": "lu",
-                             "mg_levels_pc_vankastar_sub_sub_pc_factor_mat_solver_type": "umfpack",
+                             # "mg_levels_pc_python_type": __name__ + ".ASMVankaStarPC",
+                             # "mg_levels_pc_vankastar_construct_dim": 0,
+                             # "mg_levels_pc_vankastar_exclude_subspaces": "1",
+                             # "mg_levels_pc_vankastar_sub_sub_pc_type": "lu",
+                             # "mg_levels_pc_vankastar_sub_sub_pc_factor_mat_solver_type": "umfpack",
+                             "mg_levels_pc_python_type": "firedrake.ASMVankaPC",
+                             "mg_levels_pc_vanka_include_type": "star",
+                             "mg_levels_pc_vanka_construct_dim": 0,
+                             "mg_levels_pc_vanka_exclude_subspaces": "1",
+                             "mg_levels_pc_vanka_sub_sub_pc_type": "lu",
+                             "mg_levels_pc_vanka_sub_sub_pc_factor_mat_solver_type": "umfpack",
                              "mg_coarse_pc_type": "python",
                              "mg_coarse_pc_python_type": "firedrake.AssembledPC",
                              "mg_coarse_assembled_pc_type": "lu",
                              "mg_coarse_assembled_pc_factor_mat_solver_type": "mumps",
+                             "mg_coarse_assembled_pc_factor_shift_type": "nonzero",
                              }
         
     problem = NonlinearVariationalProblem(F, z, bcs=[bc1,bc2,bc3])
@@ -239,35 +254,31 @@ def lid(para=parameters):
 
 
 def order_points(mesh_dm, points, ordering_type, prefix):
-    '''Order a the points (topological entities) of a patch based on
-    the adjacency graph of the mesh.
+    '''Order a the points (topological entities) of a patch based on the adjacency graph of the mesh.
     :arg mesh_dm: the `mesh.topology_dm`
     :arg points: array with point indices forming the patch
     :arg ordering_type: a `PETSc.Mat.OrderingType`
     :arg prefix: the prefix associated with additional ordering options
-    :returns: the permuted array of points
+    :returns: the permuted array of points                                                                        
     '''
     if ordering_type == "natural":
         return points
     subgraph = [numpy.intersect1d(points, mesh_dm.getAdjacency(p), return_indices=True)[1] for p in points]
     ia = numpy.cumsum([0] + [len(neigh) for neigh in subgraph]).astype(PETSc.IntType)
     ja = numpy.concatenate(subgraph).astype(PETSc.IntType)
-    A = PETSc.Mat().createAIJ((len(points), )*2,csr=(ia, ja, numpy.ones(ja.shape, PETSc.RealType)), comm=PETSc.COMM_SELF)
+    A = PETSc.Mat().createAIJ((len(points), )*2, csr=(ia, ja, numpy.ones(ja.shape, PETSc.RealType)), comm=PETSc.COMM_SELF)
     A.setOptionsPrefix(prefix)
     rperm, _ = A.getOrdering(ordering_type)
     A.destroy()
     return points[rperm.getIndices()]
 
 
-
 class ASMVankaStarPC(ASMPatchPC):
     '''Patch-based PC using closure of star of mesh entities implemented as an
     :class:`ASMPatchPC`.
-
     ASMVankaStarPC is an additive Schwarz preconditioner where each patch
     consists of all DoFs on the closure of the star of the mesh entity
     specified by `pc_vanka_construct_dim` (or codim).
-
     This version includes the star of the "exclude_subspaces" in the patch
     '''
 
@@ -289,9 +300,7 @@ class ASMVankaStarPC(ASMPatchPC):
         ordering = PETSc.Options().getString(self.prefix+"mat_ordering_type", default="natural")
         # Accessing .indices causes the allocation of a global array,
         # so we need to cache these for efficiency
-        V_local_ises_indices = []
-        for (i, W) in enumerate(V):
-            V_local_ises_indices.append(V.dof_dset.local_ises[i].indices)
+        V_local_ises_indices = tuple(iset.indices for iset in V.dof_dset.local_ises)
 
         # Build index sets for the patches
         ises = []
@@ -309,12 +318,14 @@ class ASMVankaStarPC(ASMPatchPC):
             star, _ = mesh_dm.getTransitiveClosure(seed, useCone=False)
             pt_array_star = order_points(mesh_dm, star, ordering, self.prefix)
             
-            pt_array_vanka = set()
-            for pt in star.tolist():
+            pt_array_vanka = []
+            for pt in reversed(pt_array_star):
                 closure, _ = mesh_dm.getTransitiveClosure(pt, useCone=True)
-                pt_array_vanka.update(closure.tolist())
+                pt_array_vanka.extend(closure)
 
-            pt_array_vanka = order_points(mesh_dm, pt_array_vanka, ordering, self.prefix)
+            # Grab unique points with stable ordering           
+            pt_array_vanka = list(reversed(dict.fromkeys(pt_array_vanka)))
+
             # Get DoF indices for patch
             indices = []
             for (i, W) in enumerate(V):
@@ -329,7 +340,7 @@ class ASMVankaStarPC(ASMPatchPC):
                         continue
                     off = section.getOffset(p)
                     # Local indices within W
-                    W_indices = slice(off*W.value_size, W.value_size * (off + dof))
+                    W_indices = slice(off*W.block_size, W.block_size * (off + dof))
                     indices.extend(V_local_ises_indices[i][W_indices])
             iset = PETSc.IS().createGeneral(indices, comm=PETSc.COMM_SELF)
             ises.append(iset)

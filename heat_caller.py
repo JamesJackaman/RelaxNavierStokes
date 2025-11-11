@@ -45,10 +45,6 @@ if __name__=="__main__":
             self.plot = args.plot
             if args.lu==True:
                 self.solver = 'lu'
-                if args.onestep==True:
-                    raise ValueError('Cannot set lu and onestep at the same time')
-            elif args.onestep==True:
-                self.solver = 'one_step'
             else:
                 self.solver = None
 

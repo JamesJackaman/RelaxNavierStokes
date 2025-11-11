@@ -30,7 +30,10 @@ def chorin(para=parameters):
         return -0.5*jump(v,n[2]) + avg(v)
     
     #Set up mesh
-    base_ = UnitSquareMesh(para.Mbase,para.Mbase)
+    distribution_parameters={"partition": True,
+                             "overlap_type": (DistributedMeshOverlapType.VERTEX, 3)}
+    base_ = UnitSquareMesh(para.Mbase,para.Mbase,
+                           distribution_parameters=distribution_parameters)
     spatial_mh = MeshHierarchy(base_,para.Mref)
     mh = ExtrudedMeshHierarchy(spatial_mh, para.N*para.dt,
                         base_layer = para.N,
@@ -55,7 +58,7 @@ def chorin(para=parameters):
     z0 = Function(Z)
     u0, p0 = z0.subfunctions
     
-    u0 = interpolate(as_vector((-sin(pi*y)*cos(pi*x), cos(pi*y)*sin(pi*x))),Z.sub(0))
+    u0 = Function(Z.sub(0)).interpolate(as_vector((-sin(pi*y)*cos(pi*x), cos(pi*y)*sin(pi*x))))
     ut = as_vector((-cos(pi*x)*sin(pi*y)*exp(-2*pi**2*t),
                     sin(pi*x)*cos(pi*y)*exp(-2*pi**2*t)))
     
@@ -85,6 +88,7 @@ def chorin(para=parameters):
     bc = DirichletBC(Z.sub(0),ut,"on_boundary")
     
     #Set up solver
+    tol = 1e-8 #solver tolerance
     if para.solver=='lu':
         solver_parameters = {'mat_type': 'aij',
                              'ksp_type': 'preonly',
@@ -104,8 +108,10 @@ def chorin(para=parameters):
                              "ksp_monitor_true_residual": None,
                              "ksp_max_it": 100,
                              "ksp_gmres_restart": 100,
-                             "ksp_atol": 1e-6,
-                             "ksp_rtol": 1e-6,
+                             "ksp_atol": tol,
+                             "ksp_rtol": tol,
+                             'snes_atol': tol,
+                             'snes_rtol': tol,
                              'pc_type': 'mg',
                              "pc_mg_type": "multiplicative",
                              "pc_mg_cycles": "v",
@@ -128,30 +134,42 @@ def chorin(para=parameters):
         solver_parameters = {'snes_type': 'newtonls',
                              'snes_ksp_ew': None,
                              'snes_monitor': None,
+                             'snes_linesearch_monitor': None,
+                             'snes_converged_reason': None,
                              'mat_type': 'aij',
                              'ksp_type': 'fgmres',
                              "ksp_monitor_true_residual": None,
-                             "ksp_max_it": 100,
-                             "ksp_gmres_restart": 100,
-                             "ksp_atol": 1e-6,
-                             "ksp_rtol": 1e-6,
+                             "ksp_max_it": 20,
+                             "ksp_gmres_restart": 20,
+                             "ksp_atol": tol*0.1,
+                             # "ksp_rtol": tol,
+                             'snes_stol': 0,
+                             'snes_atol': tol,
+                             'snes_rtol': tol,
                              'pc_type': 'mg',
                              "pc_mg_type": "multiplicative",
                              "pc_mg_cycles": "v",
-                             "mg_levels_ksp_type": "chebyshev",
+                             "mg_levels_ksp_type": "gmres",
                              "mg_levels_ksp_chebyshev_esteig": "0,0.25,0,1.05",
-                             "mg_levels_ksp_max_it": 2,
+                             "mg_levels_ksp_max_it": 3,
                              "mg_levels_ksp_convergence_test": "skip",
                              "mg_levels_pc_type": "python",
-                             "mg_levels_pc_python_type": __name__ + ".ASMVankaStarPC",
-                             "mg_levels_pc_vankastar_construct_dim": 0,
-                             "mg_levels_pc_vankastar_exclude_subspaces": "1",
-                             "mg_levels_pc_vankastar_sub_sub_pc_type": "lu",
-                             "mg_levels_pc_vankastar_sub_sub_pc_factor_mat_solver_type": "umfpack",
+                             # "mg_levels_pc_python_type": __name__ + ".ASMVankaStarPC",
+                             # "mg_levels_pc_vankastar_construct_dim": 0,
+                             # "mg_levels_pc_vankastar_exclude_subspaces": "1",
+                             # "mg_levels_pc_vankastar_sub_sub_pc_type": "lu",
+                             # "mg_levels_pc_vankastar_sub_sub_pc_factor_mat_solver_type": "umfpack",
+                             "mg_levels_pc_python_type": "firedrake.ASMVankaPC",
+                             "mg_levels_pc_vanka_include_type": "star",
+                             "mg_levels_pc_vanka_construct_dim": 0,
+                             "mg_levels_pc_vanka_exclude_subspaces": "1",
+                             "mg_levels_pc_vanka_sub_sub_pc_type": "lu",
+                             "mg_levels_pc_vanka_sub_sub_pc_factor_mat_solver_type": "umfpack",
                              "mg_coarse_pc_type": "python",
                              "mg_coarse_pc_python_type": "firedrake.AssembledPC",
                              "mg_coarse_assembled_pc_type": "lu",
                              "mg_coarse_assembled_pc_factor_mat_solver_type": "mumps",
+                             "mg_coarse_assembled_pc_factor_shift_type": "nonzero",
                              }
 
     
@@ -174,7 +192,7 @@ def chorin(para=parameters):
 
     #Get number of nonzero entries
     A, P = solver.snes.ksp.getOperators()
-    nnz = int(A.getInfo()['nz_allocated'])
+    nnz = int(A.getInfo()['nz_used'])
     
     #Compute error
     u_exact = as_vector((-cos(pi*x)*sin(pi*y)*exp(-2*pi**2*t),
@@ -250,9 +268,7 @@ class ASMVankaStarPC(ASMPatchPC):
         ordering = PETSc.Options().getString(self.prefix+"mat_ordering_type", default="natural")
         # Accessing .indices causes the allocation of a global array,
         # so we need to cache these for efficiency
-        V_local_ises_indices = []
-        for (i, W) in enumerate(V):
-            V_local_ises_indices.append(V.dof_dset.local_ises[i].indices)
+        V_local_ises_indices = tuple(iset.indices for iset in V.dof_dset.local_ises)
 
         # Build index sets for the patches
         ises = []
@@ -270,12 +286,14 @@ class ASMVankaStarPC(ASMPatchPC):
             star, _ = mesh_dm.getTransitiveClosure(seed, useCone=False)
             pt_array_star = order_points(mesh_dm, star, ordering, self.prefix)
             
-            pt_array_vanka = set()
-            for pt in star.tolist():
+            pt_array_vanka = []
+            for pt in reversed(pt_array_star):
                 closure, _ = mesh_dm.getTransitiveClosure(pt, useCone=True)
-                pt_array_vanka.update(closure.tolist())
+                pt_array_vanka.extend(closure)
 
-            pt_array_vanka = order_points(mesh_dm, pt_array_vanka, ordering, self.prefix)
+            # Grab unique points with stable ordering           
+            pt_array_vanka = list(reversed(dict.fromkeys(pt_array_vanka)))
+
             # Get DoF indices for patch
             indices = []
             for (i, W) in enumerate(V):
@@ -290,7 +308,7 @@ class ASMVankaStarPC(ASMPatchPC):
                         continue
                     off = section.getOffset(p)
                     # Local indices within W
-                    W_indices = slice(off*W.value_size, W.value_size * (off + dof))
+                    W_indices = slice(off*W.block_size, W.block_size * (off + dof))
                     indices.extend(V_local_ises_indices[i][W_indices])
             iset = PETSc.IS().createGeneral(indices, comm=PETSc.COMM_SELF)
             ises.append(iset)

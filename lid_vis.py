@@ -16,14 +16,23 @@ def visualise(name,parallel=False):
     with open(readname, 'rb') as file:
         data = pickle.load(file)
 
+    if parallel==True:
+        df = pd.DataFrame.from_dict({'Run': [],
+                                     'DOF': [],
+                                     'MG iterations': [],
+                                     'Newton iterations': [],
+                                     'Total time': [],
+                                     'Solve time': []})
 
-    df = pd.DataFrame.from_dict({'Run': [],
-                                 'DOF': [],
-                                 'NNZ': [],
-                                 'MG iterations': [],
-                                 'Newton iterations': [],
-                                 'Total time': [],
-                                 'Solve time': []})
+    else:
+        df = pd.DataFrame.from_dict({'Run': [],
+                                     'DOF': [],
+                                     'NNZ': [],
+                                     'MG iterations': [],
+                                     'Newton iterations': [],
+                                     'Total time': [],
+                                     'Solve time': []})
+    
 
     for i in range(len(data)):
         df.loc[len(df)] = data[i]
