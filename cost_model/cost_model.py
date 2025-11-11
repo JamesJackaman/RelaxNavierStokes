@@ -8,11 +8,6 @@ import matplotlib
 import mpl_helper
 from matplotlib.ticker import AutoMinorLocator, FixedLocator
 
-#Set up cost model parameters
-pow_t = 1.48278288
-pow_patch = 1.67544962
-const = 7.17000907e-07
-
 #Set up the model parameters
 Vcycles = 12
 time_step_Vcycles = 3

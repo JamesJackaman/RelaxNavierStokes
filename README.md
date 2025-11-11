@@ -15,13 +15,7 @@ The Firedrake installation script can be downloaded [here](https://www.firedrake
 python3 firedrake-install
 ```
 
-The Firedrake version used in the associated paper can be installed with the command
-
-```bash
-python3 firedrake-install --doi 10.5281/zenodo.12657473
-```
-
-The Zenodo URL for Firedrake can be found [here](https://zenodo.org/records/12657473), and has DOI [10.5281/zenodo.12657473](https://doi.org/10.5281/zenodo.12657473).
+The Firedrake version used in the associated paper can be found [here](https://zenodo.org/records/17476664), and has DOI [10.5281/zenodo.17476663](https://doi.org/10.5281/zenodo.17476663).
 
 ### Pandas
 
@@ -33,7 +27,7 @@ pip3 install pandas==1.5.0
 
 ## Code structure
 
-This code solves 3D finite element discretisations, where two of the dimensions are spatial and one is temporal. Both the heat equation and imcompressible Navier-Stokes without external forcing are solved. The codebase is split into three test problems. 
+This code solves 3D finite element discretisations, where two of the dimensions are spatial and one is temporal. Both the heat equation and incompressible Navier-Stokes without external forcing are solved. The codebase is split into three test problems. 
 
 - `heat*.py`: Code used to solve the heat equation.
 
@@ -104,7 +98,7 @@ Generates parallelisation study for lid-driven cavity presented in the paper by 
 
 ## Performance modelling
 
-The implementation in this repository only exploits parallelism in time. To explore the potential speed up we have included a performance model of time-parallelism through cyclic reduction, as outlined in [the manuscript](http://arxiv.org/abs/2407.13997). This model has been included in the directory `cost_model`.
+The implementation in this repository only exploits parallelism in space. To explore the potential speed up we have included a performance model of time-parallelism through cyclic reduction, as outlined in [the manuscript](http://arxiv.org/abs/2407.13997). This model has been included in the directory `cost_model`.
 
 #### `train_cost_model.py`
 
