@@ -2,7 +2,7 @@ import pickle
 import subprocess
 import time
 import argparse
-import heat_vis
+import heat_timestepping_vis
 
 if __name__=="__main__":
 
@@ -62,7 +62,7 @@ if __name__=="__main__":
     for Mref in Mrefs:
         for tdegree in tdegrees:
             for sdegree in sdegrees:
-                filename = 'tmp/heatdat%s%s%s%s%s%s%s' % (tmpname,
+                filename = 'tmp/heatsteppingdat%s%s%s%s%s%s%s' % (tmpname,
                                                           N, dt, tdegree,
                                                           sdegree, Mbase, Mref)
                 try:
@@ -84,7 +84,7 @@ if __name__=="__main__":
 
     #Try and visualise
     try:
-        heat_vis.visualise(tmpname)
+        heat_timestepping_vis.visualise(tmpname)
     except Exception as e:
         print('Visualisation of %s failed with' % tmpname)
         print('Error : ' + str(e))
