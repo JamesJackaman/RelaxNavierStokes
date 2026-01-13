@@ -78,7 +78,7 @@ if __name__=="__main__":
     
     print(data)
     #Write to file
-    file = open('heat%s.pickle' % tmpname, 'wb')
+    file = open('heat_timestepping%s.pickle' % tmpname, 'wb')
     pickle.dump(data,file)
     file.close()
 
