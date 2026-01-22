@@ -6,8 +6,12 @@ standard space-time finite elements
 from firedrake import *
 from firedrake.petsc import PETSc
 from irksome import DiscontinuousGalerkinTimeStepper, Dt, MeshConstant
+from pyop2.datatypes import IntType
 import matplotlib.pylab as plt
 from time import time
+
+#Parallel safe printing
+Print = PETSc.Sys.Print
 
 class parameters:
     def __init__(self):
@@ -20,7 +24,7 @@ class parameters:
         self.R = Constant(1) #Reynolds number
         self.alpha = Constant(1) #Diffusion constant
         self.plot = True
-        self.solver = ''
+        self.solver = None
     
 
 def chorin_stepper(para=parameters):
@@ -58,6 +62,35 @@ def chorin_stepper(para=parameters):
 
     ut = as_vector((-cos(pi*x)*sin(pi*y)*exp(-2*pi**2*t),
                     sin(pi*x)*cos(pi*y)*exp(-2*pi**2*t)))
+
+    #BC hack
+    class PressureFixBC(DirichletBC):
+        def __init__(self, V, val, subdomain):
+            super().__init__(V, val, subdomain)
+            sec = V.dm.getDefaultSection()
+            dm = V.mesh().topology_dm
+            coordsSection = dm.getCoordinateSection()
+            coordsDM = dm.getCoordinateDM()
+            dim = dm.getCoordinateDim()
+            coordsVec = dm.getCoordinatesLocal()
+            (vStart, vEnd) = dm.getDepthStratum(0)
+            indices = []
+            for pt in range(vStart, vEnd):
+                x = dm.getVecClosure(coordsSection, coordsVec, pt).reshape(-1, dim).mean(axis=0)
+                if (x[1]==0.) and (x[0]==0.):
+                    if dm.getLabelValue("pyop2_ghost", pt) == -1:
+                        indices.append(pt)
+            nodes = []
+            for i in indices:
+                num_of_layers = sec.getDof(i)
+                if num_of_layers > 0:
+                    off = sec.getOffset(i)
+                    nodes.append(np.arange(off,off+num_of_layers))
+
+            self.nodes = np.asarray(nodes, dtype=IntType)
+
+            Print("Fixing nodes %s" % self.nodes)
+
     
     #Set up residual
     z = Function(Z)
@@ -83,7 +116,9 @@ def chorin_stepper(para=parameters):
 
     F = F_1 + F_2 + F_time
 
-    bc = DirichletBC(Z.sub(0),ut,"on_boundary")
+    bc1 = DirichletBC(Z.sub(0),ut,"on_boundary")
+    bc2 = PressureFixBC(Z.sub(1),Constant(0),1)
+    
     
     #Set up solver
     tol = 1e-8 #solver tolerance
@@ -102,7 +137,7 @@ def chorin_stepper(para=parameters):
                              'mat_type': 'aij',
                              'ksp_type': 'fgmres',
                              "ksp_monitor_true_residual": None,
-                             "ksp_max_it": 20,
+                             "ksp_max_it": 200,
                              "ksp_gmres_restart": 20,
                              "ksp_atol": tol*0.1,
                              'snes_stol': 0,
@@ -125,23 +160,24 @@ def chorin_stepper(para=parameters):
                                          "exclude_subspaces": "1"},
                                          #"sub_mat_type": "umfpack"},
                                      "vanka_sub_sub": {
-                                         "factor_mat_solver_type": "umfpack",
+                                         "pc_factor_mat_solver_type": "mumps",
+                                         "pc_factor_shift_type": "nonzero",
                                          "pc_type": "lu"}}},
                              "mg_coarse": {
                                  "pc_type": "python",
                                  "pc_python_type": "firedrake.AssembledPC",
                                  "assembled_pc_type": "lu",
                                  "pc_factor_shift_type": "nonzero",
-                                 "pc_factor_mat_solver_type": "mumps"}
+                                 "pc_factor_mat_solver_type": "mumps",
+                                 'pc_factor_mat_mumps_icntl_14': 200}
                              }
 
 
-    stepper = DiscontinuousGalerkinTimeStepper(F, para.degree['time'], t, dt, z, bcs=bc,
+    stepper = DiscontinuousGalerkinTimeStepper(F, para.degree['time'], t, dt, z, bcs=[bc1,bc2],
                                                solver_parameters=solver_parameters)
 
     
     print('Solver parameters', stepper.solver.parameters)
-    input('')
 
     #solve
     start_solve = time()
