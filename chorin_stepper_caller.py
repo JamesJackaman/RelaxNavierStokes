@@ -2,13 +2,10 @@ from firedrake import *
 import argparse
 import pickle
 import os
-from mpi4py import MPI
 
-import lid
-import lid_stepper
-import lid_stepper0
+import chorin_stepper
 
-
+    
 if __name__=="__main__":
     if os.path.isdir('tmp')==False:
         os.mkdir('tmp')
@@ -31,18 +28,13 @@ if __name__=="__main__":
     parser.add_argument('--Mref', type=int, default = 2,
                         help = 'Number of refinement levels')
     parser.add_argument('--tmpname', type=str, default='_',
-                        help = 'Add a string here to make temporary file name unique')
+                        help = 'Add a string here to make tmp file name unique')
     parser.add_argument('--plot', action='store_true',
                         help = 'Set this flag to generate plots')
     parser.add_argument('--lu', action='store_true',
                         help = 'Solve linear system with LU')
     parser.add_argument('--onestep', action='store_true',
                         help = 'Use MG, but only perform one step of Newton')
-    parser.add_argument('--stepper0', action='store_true',
-                        help = 'Use a backward Euler timestepper')
-    parser.add_argument('--stepper', action='store_true',
-                        help = 'Use a time stepping implementation')
-    
     args, _ = parser.parse_known_args()
 
     class input_args:
@@ -55,7 +47,7 @@ if __name__=="__main__":
                            'time': args.tdegree}
             self.R = Constant(args.R)
             self.alpha = Constant(args.alpha)
-            self.plot = args.plot
+            self.plot = False
             if args.lu==True:
                 self.solver = 'lu'
                 if args.onestep==True:
@@ -65,19 +57,14 @@ if __name__=="__main__":
             else:
                 self.solver = None
 
-    if args.stepper==True:
-        raise NotImplementedError
-    elif args.stepper0==True:
-        out = lid_stepper0.lid(input_args())
-    else:
-        out = lid.lid(input_args())
+    out = chorin_stepper.chorin_stepper(input_args())
 
     #Save output
-    filename = 'tmp/liddat%s%s%s%s%s%s%s%s%s%s' % (args.tmpname, MPI.COMM_WORLD.size,
-                                                 args.N, args.dt,
-                                                 args.tdegree, args.sdegree, args.R,
-                                                 args.alpha, args.Mbase, args.Mref)
-
+    filename = 'tmp/chorinstepperdat%s%s%s%s%s%s%s%s%s' % (args.tmpname, args.N, args.dt,
+                                                    args.tdegree, args.sdegree, args.R,
+                                                    args.alpha, args.Mbase, args.Mref)
     file = open(filename,'wb')
     pickle.dump(out,file)
     file.close()
+
+    
