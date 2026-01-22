@@ -9,6 +9,10 @@ from irksome import DiscontinuousGalerkinTimeStepper, Dt, MeshConstant
 from pyop2.datatypes import IntType
 import matplotlib.pylab as plt
 from time import time
+from pyop2.datatypes import IntType
+
+#Parallel safe printing
+Print = PETSc.Sys.Print
 
 #Parallel safe printing
 Print = PETSc.Sys.Print
@@ -51,9 +55,7 @@ def chorin_stepper(para=parameters):
     x, y = SpatialCoordinate(Z.mesh())
 
     z0 = Function(Z)
-    u0, p0 = z0.subfunctions
-    
-    u0 = Function(Z.sub(0)).interpolate(as_vector((-sin(pi*y)*cos(pi*x), cos(pi*y)*sin(pi*x))))
+    z0.sub(0).interpolate(as_vector((-sin(pi*y)*cos(pi*x), cos(pi*y)*sin(pi*x))))
 
     #Set up parameters for time stepping
     MC = MeshConstant(mesh)
@@ -96,21 +98,13 @@ def chorin_stepper(para=parameters):
     z = Function(Z)
     u, p = split(z)
     phi, psi = TestFunctions(Z)
-
-    gradu = as_vector([u.dx(0),
-                       u.dx(1)])
-
-    gradphi = as_vector([phi.dx(0),
-                         phi.dx(1)])
-
-
     z.assign(z0)
     
-    F_1 = para.R * inner(dot(u,gradu),phi) * dx \
-        + p * (phi[0].dx(0) + phi[1].dx(1)) * dx \
-        + para.alpha * inner(gradu,gradphi) * dx
+    F_1 = para.R * inner(dot(grad(u),u),phi) * dx \
+        + p * (div(phi)) * dx \
+        + para.alpha * inner(grad(u),grad(phi)) * dx
 
-    F_2 = (u[0].dx(0) + u[1].dx(1)) * psi * dx
+    F_2 = (div(u)) * psi * dx
     
     F_time = inner(Dt(u), phi) * dx
 
@@ -118,7 +112,10 @@ def chorin_stepper(para=parameters):
 
     bc1 = DirichletBC(Z.sub(0),ut,"on_boundary")
     bc2 = PressureFixBC(Z.sub(1),Constant(0),1)
-    
+    bc = [bc1, bc2]
+
+    #nsp = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True, comm=mesh.comm)])
+    nsp = [(1, VectorSpaceBasis(constant=True, comm=mesh.comm))]
     
     #Set up solver
     tol = 1e-8 #solver tolerance
@@ -129,6 +126,7 @@ def chorin_stepper(para=parameters):
                              'pc_type': 'lu',
                              'snes_monitor': None}
     else:
+        ind_pressure = ",".join([str(2*i+1) for i in range(para.degree['time']+1)])
         solver_parameters = {'snes_type': 'newtonls',
                              'snes_ksp_ew': None,
                              'snes_monitor': None,
@@ -157,26 +155,24 @@ def chorin_stepper(para=parameters):
                                      "vanka": {
                                          "include_type": "star",
                                          "construct_dim": 0,
-                                         "exclude_subspaces": "1"},
+                                         "exclude_subspaces": ind_pressure},
                                          #"sub_mat_type": "umfpack"},
                                      "vanka_sub_sub": {
                                          "pc_factor_mat_solver_type": "mumps",
                                          "pc_factor_shift_type": "nonzero",
                                          "pc_type": "lu"}}},
                              "mg_coarse": {
-                                 "pc_type": "python",
-                                 "pc_python_type": "firedrake.AssembledPC",
-                                 "assembled_pc_type": "lu",
+                                 "ksp_type": "preonly",
+                                 "pc_type": "lu",
                                  "pc_factor_shift_type": "nonzero",
                                  "pc_factor_mat_solver_type": "mumps",
                                  'pc_factor_mat_mumps_icntl_14': 200}
                              }
 
 
-    stepper = DiscontinuousGalerkinTimeStepper(F, para.degree['time'], t, dt, z, bcs=[bc1,bc2],
-                                               solver_parameters=solver_parameters)
+    stepper = DiscontinuousGalerkinTimeStepper(F, para.degree['time'], t, dt, z, bcs=bc,
+                                               solver_parameters=solver_parameters, nullspace=nsp)
 
-    
     print('Solver parameters', stepper.solver.parameters)
 
     #solve
