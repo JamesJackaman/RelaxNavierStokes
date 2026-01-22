@@ -118,7 +118,7 @@ def chorin_stepper(para=parameters):
     nsp = [(1, VectorSpaceBasis(constant=True, comm=mesh.comm))]
     
     #Set up solver
-    tol = 1e-8 #solver tolerance
+    tol = 1e-6 #solver tolerance
     if para.solver=='lu':
         solver_parameters = {'mat_type': 'aij',
                              'ksp_type': 'preonly',
