@@ -4,6 +4,7 @@ import pickle
 import os
 
 import chorin
+import chorin_stepper
 
     
 if __name__=="__main__":
@@ -35,6 +36,8 @@ if __name__=="__main__":
                         help = 'Solve linear system with LU')
     parser.add_argument('--onestep', action='store_true',
                         help = 'Use MG, but only perform one step of Newton')
+    parser.add_argument('--stepper', action='store_true',
+                        help = 'Use a time stepping implementation')
     args, _ = parser.parse_known_args()
 
     class input_args:
@@ -57,7 +60,10 @@ if __name__=="__main__":
             else:
                 self.solver = None
 
-    out = chorin.chorin(input_args())
+    if args.stepper:
+        out = chorin_stepper.chorin(input_args())
+    else:
+        out = chorin.chorin(input_args())
 
     #Save output
     filename = 'tmp/chorindat%s%s%s%s%s%s%s%s%s' % (args.tmpname, args.N, args.dt,

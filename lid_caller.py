@@ -65,8 +65,11 @@ if __name__=="__main__":
             else:
                 self.solver = None
 
+    if args.stepper==True and args.stepper0==True:
+        raise ValueError('Two different solvers cannot be specified at the same time')
+                
     if args.stepper==True:
-        raise NotImplementedError
+        out = lid_stepper.lid(input_args())
     elif args.stepper0==True:
         out = lid_stepper0.lid(input_args())
     else:
