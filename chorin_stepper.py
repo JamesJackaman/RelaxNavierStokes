@@ -28,7 +28,7 @@ class parameters:
         self.solver = None
     
 
-def chorin_stepper(para=parameters):
+def chorin(para=parameters):
 
     start = time()
     
@@ -316,4 +316,4 @@ class ASMVankaStarPC(ASMPatchPC):
 
 
 if __name__=="__main__":
-    print(chorin_stepper(parameters()))
+    print(chorin(parameters()))

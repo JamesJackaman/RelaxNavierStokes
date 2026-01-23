@@ -2,7 +2,7 @@ import pickle
 import subprocess
 import time
 import argparse
-import chorin_stepper_vis
+import chorin_vis
 
 if __name__=="__main__":
 
@@ -36,8 +36,16 @@ if __name__=="__main__":
     MPIProcesses = 8
     dts = [0.01,0.005,0.0025] #List should contain dt_
 
+    #Define lists for those we want to vary
+    Mrefs = [1]
+    tdegrees = [1]
+    sdegrees = [1,2]
+    Rs = [1e1]
+    MPIProcesses = 8
+    dts = [0.01] #List should contain dt_
+
     #Make temporary file name unique under flags
-    tmpname = args.flags.replace(' ', '_').replace('-','')
+    tmpname = 'stepper' + args.flags.replace(' ', '_').replace('-','')
     
     #generate data
     for Mref in Mrefs:
@@ -55,7 +63,7 @@ if __name__=="__main__":
                             print('dt =', dt)
                             print('N =', N, flush=True)
 
-                            process = subprocess.Popen('mpiexec -n %s python chorin_stepper_caller.py %s --N %s --dt %s --tdegree %s --sdegree %s --R %s --Mbase %s --Mref %s --tmpname %s' % (MPIProcesses, '--'+args.flags, N, dt, tdegree, sdegree, R, Mbase, Mref, tmpname),
+                            process = subprocess.Popen('mpiexec -n %s python chorin_caller.py --stepper %s --N %s --dt %s --tdegree %s --sdegree %s --R %s --Mbase %s --Mref %s --tmpname %s' % (MPIProcesses, '--'+args.flags, N, dt, tdegree, sdegree, R, Mbase, Mref, tmpname),
                                                        shell=True, stdout=subprocess.PIPE)
                             Processes.append(process)
 
@@ -86,7 +94,7 @@ if __name__=="__main__":
                 for R in Rs:
                     for dt in dts:
                         N = int(N_ * (dt_/dt))
-                        filename = 'tmp/chorinstepperdat%s%s%s%s%s%s%s%s%s' % (tmpname, N, dt,
+                        filename = 'tmp/chorindat%s%s%s%s%s%s%s%s%s' % (tmpname, N, dt,
                                                                         tdegree, sdegree, R,
                                                                         1, Mbase, Mref)
                         try:
@@ -104,13 +112,13 @@ if __name__=="__main__":
     
     print(data)
     #Write to file
-    file = open('chorin_stepper%s.pickle' % tmpname, 'wb')
+    file = open('chorin%s.pickle' % tmpname, 'wb')
     pickle.dump(data,file)
     file.close()
     
     #Try and visual
     try:
-        chorin_stepper_vis.visualise(tmpname)
+        chorin_vis.visualise(tmpname)
     except Exception as e:
         print('Visualisation of %s failed with' % tmpname)
         print('Error : ', str(e))
