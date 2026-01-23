@@ -14,9 +14,6 @@ from pyop2.datatypes import IntType
 #Parallel safe printing
 Print = PETSc.Sys.Print
 
-#Parallel safe printing
-Print = PETSc.Sys.Print
-
 class parameters:
     def __init__(self):
         self.N = 10
