@@ -2,7 +2,7 @@ import pickle
 import subprocess
 import time
 import argparse
-import heat_timestepping_vis
+import heat_vis
 
 if __name__=="__main__":
 
@@ -36,7 +36,7 @@ if __name__=="__main__":
     MPIProcesses = 8
 
     #Get the temporary file name unique to the set flags
-    tmpname = args.flags.replace(' ', '_').replace('-','')
+    tmpname = 'stepper' + args.flags.replace(' ', '_').replace('-','')
     
     #generate data
     for Mref in Mrefs:
@@ -46,7 +46,7 @@ if __name__=="__main__":
                 print('tdegree =', tdegree)
                 print('sdegree =', sdegree)
 
-                process = subprocess.Popen('mpiexec -n %s python heat_timestepping_caller.py %s --N %s --dt %s --tdegree %s --sdegree %s --Mbase %s --Mref %s --tmpname %s' % (MPIProcesses, '--'+args.flags, N, dt, tdegree, sdegree, Mbase, Mref, tmpname),
+                process = subprocess.Popen('mpiexec -n %s python heat_caller.py --stepper %s --N %s --dt %s --tdegree %s --sdegree %s --Mbase %s --Mref %s --tmpname %s' % (MPIProcesses, '--'+args.flags, N, dt, tdegree, sdegree, Mbase, Mref, tmpname),
                                            shell=True, stdout=subprocess.PIPE)
                 Processes.append(process)
 
@@ -62,9 +62,9 @@ if __name__=="__main__":
     for Mref in Mrefs:
         for tdegree in tdegrees:
             for sdegree in sdegrees:
-                filename = 'tmp/heatsteppingdat%s%s%s%s%s%s%s' % (tmpname,
+                filename = 'tmp/heatdat%s%s%s%s%s%s%s%s' % (tmpname,
                                                           N, dt, tdegree,
-                                                          sdegree, Mbase, Mref)
+                                                          sdegree, 1, Mbase, Mref)
                 try:
                     with open(filename, 'rb') as file:
                         out_ = pickle.load(file)
@@ -78,13 +78,13 @@ if __name__=="__main__":
     
     print(data)
     #Write to file
-    file = open('heat_timestepping%s.pickle' % tmpname, 'wb')
+    file = open('heat%s.pickle' % tmpname, 'wb')
     pickle.dump(data,file)
     file.close()
 
     #Try and visualise
     try:
-        heat_timestepping_vis.visualise(tmpname)
+        heat_vis.visualise(tmpname)
     except Exception as e:
         print('Visualisation of %s failed with' % tmpname)
         print('Error : ' + str(e))
