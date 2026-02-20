@@ -5,7 +5,7 @@ standard space-time finite elements
 #Global imports
 from firedrake import *
 from firedrake.petsc import PETSc
-from irksome import DiscontinuousGalerkinTimeStepper, Dt, MeshConstant
+from irksome import TimeStepper, Dt, MeshConstant, DiscontinuousGalerkinScheme
 from pyop2.datatypes import IntType
 import matplotlib.pylab as plt
 from time import time
@@ -115,7 +115,7 @@ def chorin(para=parameters):
     nsp = [(1, VectorSpaceBasis(constant=True, comm=mesh.comm))]
     
     #Set up solver
-    tol = 1e-6 #solver tolerance
+    tol = 1e-8 #solver tolerance
     if para.solver=='lu':
         solver_parameters = {'mat_type': 'aij',
                              'ksp_type': 'preonly',
@@ -167,8 +167,9 @@ def chorin(para=parameters):
                              }
 
 
-    stepper = DiscontinuousGalerkinTimeStepper(F, para.degree['time'], t, dt, z, bcs=bc,
-                                               solver_parameters=solver_parameters, nullspace=nsp)
+    scheme = DiscontinuousGalerkinScheme(para.degree['time'])
+    stepper = TimeStepper(F, scheme, t, dt, z, bcs=bc,
+                          solver_parameters=solver_parameters, nullspace=nsp)
 
     print('Solver parameters', stepper.solver.parameters)
 
@@ -176,8 +177,8 @@ def chorin(para=parameters):
     start_solve = time()
     count = 0
     while (count < para.N):
+        print("Stepping from ",float(t), flush=True)
         stepper.advance()
-        print(float(t), flush=True)
         t.assign(float(t) + float(dt))
         count+=1
 
