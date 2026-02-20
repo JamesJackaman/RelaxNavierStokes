@@ -15,7 +15,7 @@ class parameters:
 
 
 #Solve the heat equation with timings
-def heat_timestepping(para=parameters):
+def heat(para=parameters):
     start = time()
 
     #Define mesh
@@ -120,4 +120,4 @@ def heat_timestepping(para=parameters):
 
 
 if __name__=="__main__":
-    print(heat_timestepping(parameters()))
+    print(heat(parameters()))

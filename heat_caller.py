@@ -3,7 +3,8 @@ import argparse
 import pickle
 import os
 
-from heat import heat
+import heat
+import heat_stepper
 
 
 if __name__=="__main__":
@@ -31,6 +32,8 @@ if __name__=="__main__":
                         help = 'Set this flag to generate plots')
     parser.add_argument('--lu', action='store_true',
                         help = 'Solve linear system with LU')
+    parser.add_argument('--stepper', action='store_true',
+                        help = 'Use a time stepping implementation')
     args, _ = parser.parse_known_args()
 
     class input_args:
@@ -48,7 +51,10 @@ if __name__=="__main__":
             else:
                 self.solver = None
 
-    out = heat(input_args())
+    if args.stepper==True:
+        out = heat_stepper.heat(input_args())
+    else:
+        out = heat.heat(input_args())
 
     #Save output
     filename = 'tmp/heatdat%s%s%s%s%s%s%s%s' % (args.tmpname, args.N, args.dt,
