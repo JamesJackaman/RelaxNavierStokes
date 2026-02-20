@@ -5,7 +5,7 @@ standard space-time finite elements using time stepping
 #Global imports
 from firedrake import *
 from firedrake.petsc import PETSc
-from irksome import DiscontinuousGalerkinTimeStepper, Dt, MeshConstant
+from irksome import DiscontinuousGalerkinScheme, TimeStepper, Dt, MeshConstant
 from pyop2.datatypes import IntType
 import matplotlib.pylab as plt
 from time import time
@@ -167,8 +167,9 @@ def lid(para=parameters):
                              }
 
 
-    stepper = DiscontinuousGalerkinTimeStepper(F, para.degree['time'], t, dt, z, bcs=bcs,
-                                               solver_parameters=solver_parameters, nullspace=nsp)
+    scheme = DiscontinuousGalerkinScheme(para.degree['time'])
+    stepper = TimeStepper(F, scheme, t, dt, z, bcs=bcs,
+                          solver_parameters=solver_parameters, nullspace=nsp)
 
     #initialise plots
     if para.plot:
@@ -182,8 +183,8 @@ def lid(para=parameters):
     start_solve = time()
     count = 0
     while (count < para.N):
+        Print('Stepping from t =', float(t), flush=True)
         stepper.advance()
-        Print('t =', float(t), flush=True)
         t.assign(float(t) + float(dt))
         count+=1
         if para.plot:

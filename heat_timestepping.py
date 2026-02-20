@@ -1,5 +1,5 @@
 from firedrake import *
-from irksome import DiscontinuousGalerkinTimeStepper, Dt, MeshConstant
+from irksome import DiscontinuousGalerkinScheme, TimeStepper, Dt, MeshConstant
 from time import time
 
 #Problem parameters used if running this script
@@ -53,12 +53,16 @@ def heat_timestepping(para=parameters):
     else:
         solver_parameters = {"mat_type": "aij",
                              "snes_type": "ksponly",
+                             "snes_lag_jacobian": -2,
+                             "snes_lag_jacobian_persists": "true",
+                             "snes_lag_preconditioner": -2,
+                             "snes_lag_preconditioner_persists": "true",
                              "ksp_type": "fgmres",
                              "ksp_monitor_true_residual": None,
                              "ksp_max_it": 100,
                              "ksp_gmres_restart": 100,
-                             "ksp_atol": 1e-14,
-                             "ksp_rtol": 1e-10,
+                             "ksp_atol": 1e-6,
+                             "ksp_rtol": 1e-6,
                              "pc_type": "mg",
                              "mg_levels": {
                                  "ksp_type": "chebyshev",
@@ -84,9 +88,9 @@ def heat_timestepping(para=parameters):
                                  "pc_factor_mat_solver_type": "mumps"}
                              }
 
-    stepper = DiscontinuousGalerkinTimeStepper(F, para.degree['time'], t, dt, u, bcs=None,
-                                               solver_parameters=solver_parameters)
-
+    scheme = DiscontinuousGalerkinScheme(para.degree['time'])
+    stepper = TimeStepper(F, scheme, t, dt, u, bcs=None,
+                          solver_parameters=solver_parameters)
 
     start_solve = time()
     count = 0
