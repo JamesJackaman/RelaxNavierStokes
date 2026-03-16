@@ -48,6 +48,10 @@ This code solves 3D finite element discretisations, where two of the dimensions 
 
 - `lid*.py`: Code used to solve Navier-Stokes for lid-driven cavity test problem.
 
+The test cases are each implemented in two ways: By default, we solve using a global space-time finite element scheme. Additionally, we can solve using a time stepping approach. In our setup, the time stepping approach is written as `{problem}_stepper.py`, and additionally depends on [Irksome](https://www.firedrakeproject.org/Irksome/]) and has been tested with on the Irksome commit `1bdcfff7a7989bda6a4888b8fca2f8f11ecb717b`. Finally, for the lid driven cavity, we have an additional function `lid_stepper0.py`, which runs a more efficient version of the time stepping scheme when the temporal degree is zero (backward Euler).
+
+
+
 For more information on each test case please see the associated paper.
 
 ### Function breakdown
@@ -82,13 +86,13 @@ Timings will be output in the terminal as well as saved to `data/` subdirectory 
 
 A helper function to visualise computational timings both in the terminal and to save them as csv files.
 
-#### lid_stepper.py
+#### lid_stepper0.py
 
 A variation of `lid.py` where the space-time finite element method is solved over a single time slab sequentually in a time-stepping manor. Can be called in `lid_caller.py` with the flag `--stepper`. 
 
 #### `lid_parallel_generator.py`
 
-Generates parallelisation study for lid-driven cavity presented in the paper by varying the number of MPI cores for the WRMG solver. To generate the timings for the time-stepping approach pass the flag `--flags 'stepper'`. Note the published version of this experiments ran on [v1.0](https://github.com/username/repository/releases/v1.0) of this repository.
+Generates parallelisation study for lid-driven cavity presented in the paper by varying the number of MPI cores for the WRMG solver. To generate the timings for the time-stepping approach pass the flag `--flags 'stepper0'`. Note the published version of this experiments ran on [v1.0](https://github.com/username/repository/releases/v1.0) of this repository.
 
 ## Performance modelling
 
