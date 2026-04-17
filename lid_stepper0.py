@@ -3,11 +3,8 @@ Lid driven cavity
 """
 #Global imports
 from firedrake import *
-from firedrake.petsc import PETSc
-import matplotlib.pylab as plt
 import numpy as np
 from time import time
-from pyop2.datatypes import IntType
 
 #Parallel safe printing
 Print = PETSc.Sys.Print
@@ -18,16 +15,15 @@ class parameters:
         self.dt = 0.001 #Specified instead of end time
         self.Mbase = 10
         self.Mref = 3
-        self.degree = {'space': 2,
-                       'time': 0}
+        self.degree = {'space': 2}
         self.R = Constant(100) #Reynolds number
         self.alpha = Constant(1) #Diffusion constant
         self.plot = True
-        self.solver = 'mg'
+        self.solver = 'one_step'
     
 
 def lid(para=parameters):
-
+    
     start = time()
     
     def plus(v):
@@ -39,25 +35,18 @@ def lid(para=parameters):
     base_ = UnitSquareMesh(para.Mbase,para.Mbase,
                            distribution_parameters=distribution_parameters)
     spatial_mh = MeshHierarchy(base_,para.Mref)
-    mh = ExtrudedMeshHierarchy(spatial_mh, para.N*para.dt,
-                        base_layer = para.N,
-                        refinement_ratio=1,
-                        extrusion_type='uniform')
-    mesh = mh[-1]
+
+    mesh = spatial_mh[-1]
 
     n = FacetNormal(mesh)
     
     #Define function space
-    space_element1 = FiniteElement("CG", triangle, para.degree['space']+1)
-    space_element2 = FiniteElement("CG", triangle, para.degree['space'])
-    time_element = FiniteElement("DG", interval, para.degree['time'])
-    spacetime_element1 = TensorProductElement(space_element1,time_element)
-    spacetime_element2 = TensorProductElement(space_element2,time_element)
-    Z = MixedFunctionSpace((VectorFunctionSpace(mesh,spacetime_element1,dim=2),
-                            FunctionSpace(mesh,spacetime_element2)))
+    CG2 = VectorFunctionSpace(mesh,"CG",para.degree['space']+1,dim=2)
+    CG1 = FunctionSpace(mesh,"CG",para.degree['space'])
+    Z = MixedFunctionSpace((CG2,CG1))
     
     #Define initial condition
-    x, y, t = SpatialCoordinate(Z.mesh())
+    x, y = SpatialCoordinate(Z.mesh())
 
     z0 = Function(Z)
     u0, p0 = z0.subfunctions
@@ -72,18 +61,17 @@ def lid(para=parameters):
 
     gradphi = as_vector([phi.dx(0),
                          phi.dx(1)])
-    upwinding = jump(u[0],n[2]) * plus(phi[0]) + jump(u[1],n[2]) * plus(phi[1])
     
-    F_1 = para.R * inner(dot(u,gradu),phi) * dx \
+    F_1 = para.R * inner(dot(u, gradu),phi) * dx \
         + p * (phi[0].dx(0) + phi[1].dx(1)) * dx \
         + para.alpha * inner(gradu,gradphi) * dx
 
     F_2 = (u[0].dx(0) + u[1].dx(1)) * psi * dx
-    
-    F_time = inner(u.dx(2), phi) * dx - upwinding * dS_h
-    F_ic = 0.5 * inner((u-u0),phi)*ds_b
 
-    F = F_1 + F_2 + F_time + F_ic
+    F_time = para.dt**(-1)*inner(u - u0, phi) * dx
+
+    F = F_1 + F_2 + F_time
+    F = para.dt * F #rescale
 
     class PressureFixBC(DirichletBC):
         def __init__(self, V, val, subdomain):
@@ -129,13 +117,6 @@ def lid(para=parameters):
                              'snes_rtol': tol,
                              'snes_stol': tol,
                              'snes_monitor': None}
-    elif para.solver=='lu_step':
-        solver_parameters = {'mat_type': 'aij',
-                             'ksp_type': 'preonly',
-                             "pc_factor_mat_solver_type":"mumps",
-                             "pc_factor_shift_type":"nonzero",
-                             'pc_type': 'lu',
-                             'snes_type': 'ksponly'}
     elif para.solver=='one_step':    
         solver_parameters = {'snes_type': 'ksponly',
                              'mat_type': 'aij',
@@ -143,10 +124,41 @@ def lid(para=parameters):
                              "ksp_monitor_true_residual": None,
                              "ksp_max_it": 100,
                              "ksp_gmres_restart": 100,
-                             # "ksp_atol": tol,
-                             # "ksp_rtol": tol,
-                             "snes_atol": tol,
-                             "snes_rtol": tol,
+                             # 'ksp_atol': tol,
+                             # 'ksp_rtol': tol,
+                             'snes_atol': tol,
+                             'snes_rtol': tol,
+                             'pc_type': 'mg',
+                             "pc_mg_type": "multiplicative",
+                             "pc_mg_cycles": "v",
+                             "mg_levels_ksp_type": "chebyshev",
+                             "mg_levels_ksp_chebyshev_esteig": "0,0.25,0,1.05",
+                             "mg_levels_ksp_max_it": 2,
+                             "mg_levels_ksp_convergence_test": "skip",
+                             "mg_levels_pc_type": "python",
+                             "mg_levels_pc_python_type": __name__ + ".ASMVankaStarPC",
+                             "mg_levels_pc_vankastar_construct_dim": 0,
+                             "mg_levels_pc_vankastar_exclude_subspaces": "1,2",
+                             "mg_levels_pc_vankastar_sub_sub_pc_type": "lu",
+                             "mg_levels_pc_vankastar_sub_sub_pc_factor_mat_solver_type": "umfpack",
+                             "mg_coarse_pc_type": "python",
+                             "mg_coarse_pc_python_type": "firedrake.AssembledPC",
+                             "mg_coarse_assembled_pc_type": "lu",
+                             "mg_coarse_assembled_pc_factor_mat_solver_type": "mumps",
+                             }
+    else:
+        solver_parameters = {'snes_type': 'newtonls',
+                             'snes_ksp_ew': None,
+                             'snes_monitor': None,
+                             'mat_type': 'aij',
+                             # 'ksp_atol': tol,
+                             # 'ksp_rtol': tol,
+                             'snes_atol': tol,
+                             'snes_rtol': tol,
+                             'ksp_type': 'fgmres',
+                             "ksp_monitor_true_residual": None,
+                             "ksp_max_it": 100,
+                             "ksp_gmres_restart": 100,
                              'pc_type': 'mg',
                              "pc_mg_type": "multiplicative",
                              "pc_mg_cycles": "v",
@@ -165,85 +177,52 @@ def lid(para=parameters):
                              "mg_coarse_assembled_pc_type": "lu",
                              "mg_coarse_assembled_pc_factor_mat_solver_type": "mumps",
                              }
-    else:
-        solver_parameters = {'snes_type': 'newtonls',
-                             'snes_ksp_ew': None,
-                             'snes_monitor': None,
-                             'snes_linesearch_monitor': None,
-                             'snes_converged_reason': None,
-                             'mat_type': 'aij',
-                             "ksp_atol": tol*0.1,
-                             # "ksp_rtol": tol,
-                             'snes_stol': 0,
-                             "snes_atol": tol,
-                             "snes_rtol": tol,
-                             'ksp_type': 'fgmres',
-                             "ksp_monitor_true_residual": None,
-                             "ksp_max_it": 100,
-                             "ksp_gmres_restart": 100,
-                             'pc_type': 'mg',
-                             "pc_mg_type": "multiplicative",
-                             "pc_mg_cycles": "v",
-                             "mg_levels_ksp_type": "gmres",
-                             "mg_levels_ksp_chebyshev_esteig": "0,0.25,0,1.05",
-                             "mg_levels_ksp_max_it": 3,
-                             "mg_levels_ksp_convergence_test": "skip",
-                             "mg_levels_pc_type": "python",
-                             # "mg_levels_pc_python_type": __name__ + ".ASMVankaStarPC",
-                             # "mg_levels_pc_vankastar_construct_dim": 0,
-                             # "mg_levels_pc_vankastar_exclude_subspaces": "1",
-                             # "mg_levels_pc_vankastar_sub_sub_pc_type": "lu",
-                             # "mg_levels_pc_vankastar_sub_sub_pc_factor_mat_solver_type": "umfpack",
-                             "mg_levels_pc_python_type": "firedrake.ASMVankaPC",
-                             "mg_levels_pc_vanka_include_type": "star",
-                             "mg_levels_pc_vanka_construct_dim": 0,
-                             "mg_levels_pc_vanka_exclude_subspaces": "1",
-                             "mg_levels_pc_vanka_sub_sub_pc_type": "lu",
-                             "mg_levels_pc_vanka_sub_sub_pc_factor_mat_solver_type": "umfpack",
-                             "mg_coarse_pc_type": "python",
-                             "mg_coarse_pc_python_type": "firedrake.AssembledPC",
-                             "mg_coarse_assembled_pc_type": "lu",
-                             "mg_coarse_assembled_pc_factor_mat_solver_type": "mumps",
-                             "mg_coarse_assembled_pc_factor_shift_type": "nonzero",
-                             }
         
     problem = NonlinearVariationalProblem(F, z, bcs=[bc1,bc2,bc3])
     solver = NonlinearVariationalSolver(problem, solver_parameters=solver_parameters)
 
-
-    start_solve = time()
-    
-    #Solve
-    solver.solve()
-
-    end = time()
-    
-    iterations = solver.snes.getLinearSolveIterations()
-    nl_iterations = solver.snes.getIterationNumber()
-
-    print('iterations', iterations)
-    print('nl iterations', nl_iterations)
-
-    #Get number of nonzero entries
-    A, P = solver.snes.ksp.getOperators()
-    nnz = int(A.getInfo()['nz_allocated'])
-
-    
-    #Plot
+    t = 0 #initalise time
+    #set up iteration counters
+    iterations = []
+    nl_iterations = []
+    #Initialise plots
     if para.plot:
-        ufile = File('plots/lid.pvd')
-        u, p= z.subfunctions
-        u.rename("u","u")
-        p.rename("p","p")
-        ufile.write(u,p)
+        zfile = File('plots/lid_stepper.pvd')
+        u0, p0 = z0.subfunctions
+        u0.rename('u','u')
+        p0.rename('p','p')
+        zfile.write(u0,p0, time=0)
+        
+    
+    start_solve = time()
+    while t<para.N * para.dt:
+        #Solve
+        solver.solve()
+        z0.assign(z)
+        t += para.dt
+
+        #Save iteration counts
+        iterations.append(solver.snes.getLinearSolveIterations())
+        nl_iterations.append(solver.snes.getIterationNumber())
+
+        #Save solution (if plotting)
+        if para.plot:
+            zfile.write(u0,p0, time=t)
+            
         
 
+    end = time()
+
+    print('iterations', iterations)
+    print(np.mean(iterations))
+    print('nl iterations', nl_iterations)
+    print(np.mean(nl_iterations))
+    
         
     #Output relevant info
     out = {'dof': Z.dim(),
-           'nnz': nnz,
-           'iterations': iterations,
-           'newton iterations': nl_iterations,
+           'iterations': np.mean(iterations),
+           'newton iterations': np.mean(nl_iterations),
            'time_total': end-start,
            'time_solve': end-start_solve}
 

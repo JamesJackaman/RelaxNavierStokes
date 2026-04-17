@@ -1,11 +1,11 @@
 """
-Solving Navier-Stokes using
-standard space-time finite elements using time stepping
+Test script solving Navier-Stokes using
+standard space-time finite elements
 """
 #Global imports
 from firedrake import *
 from firedrake.petsc import PETSc
-from irksome import DiscontinuousGalerkinScheme, TimeStepper, Dt, MeshConstant
+from irksome import TimeStepper, Dt, MeshConstant, DiscontinuousGalerkinScheme
 from time import time
 
 #Parallel safe printing
@@ -13,19 +13,19 @@ Print = PETSc.Sys.Print
 
 class parameters:
     def __init__(self):
-        self.N = 20
-        self.dt = 0.001 #Specified instead of end time
+        self.N = 10
+        self.dt = 0.01 #Specified instead of end time
         self.Mbase = 10
-        self.Mref = 3
+        self.Mref = 2
         self.degree = {'space': 1,
-                       'time': 1}
+                       'time': 2}
         self.R = Constant(1) #Reynolds number
         self.alpha = Constant(1) #Diffusion constant
         self.plot = True
         self.solver = None
     
 
-def lid(para=parameters):
+def chorin(para=parameters):
 
     start = time()
     
@@ -49,6 +49,7 @@ def lid(para=parameters):
     x, y = SpatialCoordinate(Z.mesh())
 
     z0 = Function(Z)
+    z0.sub(0).interpolate(as_vector((-sin(pi*y)*cos(pi*x), cos(pi*y)*sin(pi*x))))
 
     #Set up parameters for time stepping
     MC = MeshConstant(mesh)
@@ -103,16 +104,15 @@ def lid(para=parameters):
 
     F = F_1 + F_2 + F_time
 
-    bc1 = DirichletBC(Z.sub(0),as_vector((0,0)),(1,2,3))
-    bc2 = DirichletBC(Z.sub(0),as_vector((1,0)),4)
-    bc3 = PressureFixBC(Z.sub(1),Constant(0),1)
-    bcs = [bc1,bc2,bc3]
+    bc1 = DirichletBC(Z.sub(0),ut,"on_boundary")
+    bc2 = PressureFixBC(Z.sub(1),Constant(0),1)
+    bc = [bc1, bc2]
 
     #nsp = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True, comm=mesh.comm)])
     nsp = [(1, VectorSpaceBasis(constant=True, comm=mesh.comm))]
     
     #Set up solver
-    tol = 1e-6 #solver tolerance
+    tol = 1e-8 #solver tolerance
     if para.solver=='lu':
         solver_parameters = {'mat_type': 'aij',
                              'ksp_type': 'preonly',
@@ -165,41 +165,48 @@ def lid(para=parameters):
 
 
     scheme = DiscontinuousGalerkinScheme(para.degree['time'])
-    stepper = TimeStepper(F, scheme, t, dt, z, bcs=bcs,
+    stepper = TimeStepper(F, scheme, t, dt, z, bcs=bc,
                           solver_parameters=solver_parameters, nullspace=nsp)
 
-    #initialise plots
-    if para.plot:
-        u, p = z.subfunctions
-        u.rename('u')
-        p.rename('p')
-        zfile = VTKFile("plots/lid_stepper.pvd")
-        zfile.write(u,p,time=float(t))
-    
+    print('Solver parameters', stepper.solver.parameters)
+
     #solve
     start_solve = time()
     count = 0
     while (count < para.N):
-        Print('Stepping from t =', float(t), flush=True)
+        print("Stepping from ",float(t), flush=True)
         stepper.advance()
         t.assign(float(t) + float(dt))
         count+=1
-        if para.plot:
-            zfile.write(u,p,time=float(t))
 
     end = time()
 
     #Get solver stats
     steps, nl_iterations, iterations = stepper.solver_stats()
 
+    print('newstats', stepper.solver_stats())
+
     #Get number of nonzero entries
     A, P = stepper.solver.snes.ksp.getOperators()
     nnz = int(A.getInfo()['nz_used'])
     
+    #Compute error
+    u_exact = as_vector((-cos(pi*x)*sin(pi*y)*exp(-2*pi**2*t),
+                     sin(pi*x)*cos(pi*y)*exp(-2*pi**2*t)))
+    
+    l2err = assemble((u-u_exact)**2*dx(degree=16))**0.5
+    print('Error is ', l2err)
+    
+    #Plot
+    if para.plot:
+        ufile = File('plots/chorin.pvd')
+        u, p = z.subfunctions
+        ufile.write(u,p)
 
     #Output relevant info
     out = {'dof': Z.dim(),
            'nnz': nnz,
+           'error': l2err,
            'iterations': iterations/steps,
            'newton iterations': nl_iterations/steps,
            'time_total': end-start,
@@ -209,5 +216,6 @@ def lid(para=parameters):
     return out
 
 
+
 if __name__=="__main__":
-    Print(lid(parameters()))
+    print(chorin(parameters()))

@@ -35,8 +35,9 @@ if __name__=="__main__":
     Rs = [1e1]
     MPIProcesses = [4, 8, 16, 32, 40]
 
+    
     #Make temporary file name unique under flags
-    tmpname = args.flags.replace(' ', '_').replace('-','')
+    tmpname = 'stepper0' + args.flags.replace(' ', '_').replace('-','')
     
     #generate data
     for Mref in Mrefs:
